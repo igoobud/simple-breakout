@@ -8,11 +8,15 @@ const OG_WIDTH = 160;
 const OG_HEIGHT = OG_WIDTH * ASPECT;
 
 
-function rerange_value(value) {
+function rerange_width(value) {
     return value / OG_WIDTH * SCREEN_WIDTH;
 }
 
-function unrange_value(value) {
+function rerange_height(value) {
+    return value / OG_HEIGHT * SCREEN_HEIGHT;
+}
+
+function unrange_width(value) {
     return value / SCREEN_WIDTH * OG_WIDTH;
 }
 
@@ -50,10 +54,10 @@ class Brick extends GameObject {
         stroke(this.color);
         fill(this.color);
         rect(
-            rerange_value(this.x),
-            rerange_value(this.y),
-            rerange_value(this.w),
-            rerange_value(this.h)
+            rerange_width(this.x),
+            rerange_height(this.y),
+            rerange_width(this.w),
+            rerange_height(this.h)
         );
 
     }
@@ -61,7 +65,7 @@ class Brick extends GameObject {
 
 class Player extends Brick {
     update() {
-        this.x = unrange_value(mouseX) - this.w/2;
+        this.x = unrange_width(mouseX) - this.w/2;
     }
 }
 
@@ -162,9 +166,9 @@ class Ball extends GameObject {
         fill(this.color);
         stroke(this.color);
         circle(
-            rerange_value(this.x),
-            rerange_value(this.y),
-            rerange_value(this.r)
+            rerange_width(this.x),
+            rerange_height(this.y),
+            rerange_height(this.r)
         );
     }
 }

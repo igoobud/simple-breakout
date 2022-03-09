@@ -1,116 +1,212 @@
+const gameElem = document.querySelector("#game");
+const ASPECT = 6/5;
+let SCREEN_WIDTH = gameElem.clientWidth;
+let SCREEN_HEIGHT = SCREEN_WIDTH * ASPECT;
+
+const OG_MIN = 25;
+const OG_WIDTH = 160;
+const OG_HEIGHT = 192;
 
 
-const canvas = document.querySelector("canvas");
-const ctx = canvas.getContext("2d");
+function rerange_value(value) {
+    return value / OG_WIDTH * SCREEN_WIDTH;
+}
 
-let BOX_WIDTH = canvas.width / 10;
-let BOX_HEIGHT = canvas.width / 50;
-let BALL_RADIUS = canvas.width / 100;
-let PLAYER_COLOR = "#fff";
+function unrange_value(value) {
+    return value / SCREEN_WIDTH * OG_WIDTH;
+}
 
 
+class GameObject {
+    update() {}
+    draw() {}
+}
 
-class Rectangle {
+class UIData extends GameObject {
+    constructor() {
+        super();
+        this.score = 0;
+        this.lives = 3;
+    }
+
+    draw() {
+        textSize(32);
+        fill("white");
+        text(`Lives: ${this.lives}`, 10, 48);
+        text(`Score: ${this.score}`, SCREEN_WIDTH - SCREEN_WIDTH / 2.5, 48)
+    }
+}
+
+class Brick extends GameObject {
     constructor(x, y, w, h, color) {
+        super();
         this.x = x;
         this.y = y;
         this.w = w;
         this.h = h;
         this.color = color;
     }
-    resize(old_width, old_height) {
-        this.w = BOX_WIDTH;
-        this.h = BOX_HEIGHT;
-        this.x = this.x * canvas.width / old_width;
-        this.y = this.y * canvas.height / old_height;
-    }
     draw() {
-        ctx.fillStyle= this.color;
-        ctx.fillRect(this.x, this.y, this.w, this.h);
+        stroke(this.color);
+        fill(this.color);
+        rect(
+            rerange_value(this.x),
+            rerange_value(this.y),
+            rerange_value(this.w),
+            rerange_value(this.h)
+        );
+
     }
 }
 
-class Player extends Rectangle {}
+class Player extends Brick {
+    update() {
+        this.x = unrange_value(mouseX) - this.w/2;
+    }
+}
 
-class Ball {
-    constructor(x, y, rad, color) {
+class Ball extends GameObject {
+    constructor(x, y, r, speed, color) {
+        super();
         this.x = x;
         this.y = y;
-        this.rad = rad;
+        this.r = r;
+        this.speed = speed;
+        this.og_speed = speed;
         this.color = color;
+        this.vx = 0;
+        this.vy = -1;
+        this.state = "standby";
     }
-    draw() {
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.rad, 0, 360);
-        ctx.fill();
+    update_standby(player) {
+        this.x = player.x + player.w / 2;
+        this.y = player.y - this.r;
+        if (keyIsDown(32) || mouseIsPressed) {
+            this.state = "playing";
+        }
+        this.vx = 0;
+        this.vy = -1;
     }
 
-    resize(old_width, old_height) {
-        this.rad = BALL_RADIUS;
-        this.x = this.x * canvas.width / old_width;
-        this.y = this.y * canvas.height / old_height;
+    collide_brick(brick, nx, ny) {
+        let hit = false;
+        if (collideRectCircle(brick.x, brick.y, brick.w, brick.h, nx, ny, this.r)) {
+            if (this.x < brick.x || this.x > brick.x + brick.w) {
+                this.vx = -this.vx;
+            }
+            else if (this.y < brick.y || this.y > brick.y + brick.h) {
+                this.vy = -this.vy;
+            }
+            hit = true;
+        }
+        return hit;
+    }
+    update_playing(player, bricks, data) {
+        let self = this;
+        let nx = this.x + this.vx;
+        let ny = this.y + this.vy;
+
+        bricks.forEach((brick, i) => {
+            if(self.collide_brick(brick, nx, ny)) {
+                bricks.splice(i, 1);
+                data.score += 1;
+                if(bricks.length == 0) {
+                    initBricks();
+                    this.speed *= 2;
+                }
+            }
+        });
+        if(this.collide_brick(player, nx, ny)) {
+            if(this.x < player.x + player.w/2) {
+                this.vx = (this.x - (player.x + player.w/2)) * 0.5;
+            }
+            else if(this.x > player.x + player.w / 2) {
+                this.vx = (this.x - (player.x + player.w / 2)) * 0.5;
+            }
+            this.vy = -3;
+        }
+
+        if(nx - this.r < 0 || nx + this.r > OG_WIDTH) {
+            this.vx = -this.vx;
+        }
+        if(ny - this.r < OG_MIN) {
+            this.vy = -this.vy
+        }
+        if(ny > OG_HEIGHT) {
+            this.state = "standby";
+            data.lives -= 1;
+            if(data.lives < 0) {
+                data.score = 0;
+                data.lives = 3;
+                this.speed = this.og_speed;
+            }
+        }
+        const denom = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+        this.vx = this.vx / denom;
+        this.vy = this.vy / denom;
+        nx = this.x + this.speed * this.vx;
+        ny = this.y + this.speed * this.vy;
+        this.x = nx;
+        this.y = ny;
+    }
+    update(player, bricks, data) {
+        if(this.state == "standby") {
+            this.update_standby(player);
+        }
+        else {
+            this.update_playing(player, bricks, data);
+        }
+    }
+
+    draw() {
+        fill(this.color);
+        stroke(this.color);
+        circle(
+            rerange_value(this.x),
+            rerange_value(this.y),
+            rerange_value(this.r)
+        );
     }
 }
 
-const player = new Player(canvas.width / 2 - BOX_WIDTH/2, canvas.height - 10, BOX_WIDTH, BOX_HEIGHT, PLAYER_COLOR);
-const ball = new Ball(player.x+player.w/2, player.y-BALL_RADIUS, BALL_RADIUS, "white");
-const boxes = [];
-
-function init_boxes() {
-    const colors = ["red", "red", "orange", "orange", "green", "green", "yellow", "yellow"]
-    for(let i = 0;i < canvas.width;i+=BOX_WIDTH) {
-        let idx = 0;
-        for(let j = 0;j < BOX_HEIGHT * colors.length;j+=BOX_HEIGHT) {
-            boxes.push(new Rectangle(i, j, BOX_WIDTH, BOX_HEIGHT, colors[idx]));
-            idx++;
+const uiData = new UIData();
+const player = new Player(68, 188, 32, 2, "white");
+const bricks = [];
+function initBricks() {
+    const rows = ["red", "red", "orange", "orange", "green", "green", "yellow", "yellow"];
+    for (let i = 0; i < rows.length; i++) {
+        for (let j = 0; j < OG_WIDTH; j += 10) {
+            bricks.push(new Brick(j, i * 3 + OG_MIN, 10, 3, rows[i]));
         }
     }
 }
+initBricks();
 
-function update() {
+const ball = new Ball(player.x + player.w / 2, player.y - 2, 2, 1.5, "white");
 
+function setup() {
+    const canvas = createCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
+    canvas.parent(gameElem);
+    canvas.style.position = "absolute";
+    console.log(canvas);
 }
-
 
 function draw() {
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    background("rgba(0, 0, 0, 0.3)");
+
+    uiData.update();
+    player.update();
+    bricks.forEach((brick) => { brick.update() })
+    ball.update(player, bricks, uiData);
+
+    uiData.draw();
     player.draw();
+    bricks.forEach((brick) => { brick.draw() })
     ball.draw();
-    boxes.forEach((box) => {
-        box.draw();
-    });
 }
 
-function mainloop() {
-    update();
-    draw();
-    requestAnimationFrame(mainloop);
+function windowResized() {
+    SCREEN_WIDTH = gameElem.clientWidth;
+    SCREEN_HEIGHT = SCREEN_WIDTH * ASPECT;
+    resizeCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
-
-function resize() {
-    const old_width = canvas.width;
-    const old_height = canvas.height;
-    canvas.width = 512;
-    canvas.height = 512;
-    if (innerWidth < 512) {
-        canvas.width = innerWidth;
-        canvas.height = innerWidth;
-    }
-    BOX_WIDTH = canvas.width / 10;
-    BOX_HEIGHT = canvas.width / 50;
-    BALL_RADIUS = canvas.width / 100;
-    player.resize(old_width, old_height);
-    ball.resize(old_width, old_height);
-    boxes.forEach((box) => {
-        box.resize(old_width, old_height);
-    });
-}
-
-window.onresize = resize;
-resize();
-init_boxes();
-
-mainloop();
-

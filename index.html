@@ -9,13 +9,20 @@
         body {
             margin: 0 auto;
             margin-top: 1em;
-            width:fit-content;
+            max-width:512px;
             overflow: hidden;
         }
+        #game {
+            background-color: black;
+        }
+
     </style>
 </head>
 <body>
-    <canvas></canvas>
-    <script src="index.js"></script>
+    <div id="game"></div>
+
+<script defer src="https://unpkg.com/p5"></script>
+<script defer src="https://unpkg.com/p5.collide2d"></script>
+<script defer src="index.js"></script>
 </body>
 </html>

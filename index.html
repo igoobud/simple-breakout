@@ -5,22 +5,25 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+        <link rel="stylesheet" href="/css/x-small.css">
+        <link rel="stylesheet" href="/css/small.css">
+        <link rel="stylesheet" href="/css/medium.css">
+        <link rel="stylesheet" href="/css/large.css">
+        <link rel="stylesheet" href="/css/x-large.css">
+        <link rel="stylesheet" href="/css/xx-large.css">
     <style>
-        body {
-            margin: 0 auto;
-            margin-top: 1em;
-            max-width:512px;
-            overflow: hidden;
-        }
         #game {
             background-color: black;
         }
-
     </style>
 </head>
 <body>
-    <div id="game"></div>
-
+    <div class="container">
+        <a href="/" class="home-link">
+            <h1 class="text-center">Igoobud Games</h1>
+        </a>
+        <div id="game"></div>
+    </div>
 <script defer src="https://unpkg.com/p5"></script>
 <script defer src="https://unpkg.com/p5.collide2d"></script>
 <script defer src="index.js"></script>

@@ -1,11 +1,11 @@
 const gameElem = document.querySelector("#game");
-const ASPECT = 6/5;
+const ASPECT = 5/6;
 let SCREEN_WIDTH = gameElem.clientWidth;
 let SCREEN_HEIGHT = SCREEN_WIDTH * ASPECT;
 
 const OG_MIN = 25;
 const OG_WIDTH = 160;
-const OG_HEIGHT = 192;
+const OG_HEIGHT = OG_WIDTH * ASPECT;
 
 
 function rerange_value(value) {
@@ -170,7 +170,7 @@ class Ball extends GameObject {
 }
 
 const uiData = new UIData();
-const player = new Player(68, 188, 32, 2, "white");
+const player = new Player(68, OG_HEIGHT-4, 32, 2, "white");
 const bricks = [];
 function initBricks() {
     const rows = ["red", "red", "orange", "orange", "green", "green", "yellow", "yellow"];
